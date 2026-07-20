@@ -30,17 +30,28 @@ class _HomeShellState extends State<HomeShell> {
     ];
     return Scaffold(
       body: pages[tab],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: tab,
-        onDestinationSelected: (i) => setState(() => tab = i),
-        backgroundColor: Colors.white,
-        indicatorColor: CvColors.green.withOpacity(0.15),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.search), label: "Rechercher"),
-          NavigationDestination(icon: Icon(Icons.add_circle_outline), label: "Publier"),
-          NavigationDestination(icon: Icon(Icons.route), label: "Mes trajets"),
-          NavigationDestination(icon: Icon(Icons.person_outline), label: "Profil"),
-        ],
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          boxShadow: [BoxShadow(color: Color(0x11000000), blurRadius: 16, offset: Offset(0, -4))],
+        ),
+        child: NavigationBar(
+          selectedIndex: tab,
+          onDestinationSelected: (i) => setState(() => tab = i),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          indicatorColor: CvColors.green.withOpacity(0.14),
+          destinations: const [
+            NavigationDestination(
+                icon: Icon(Icons.search_rounded), selectedIcon: Icon(Icons.search_rounded, color: CvColors.greenDark), label: "Rechercher"),
+            NavigationDestination(
+                icon: Icon(Icons.add_circle_outline), selectedIcon: Icon(Icons.add_circle, color: CvColors.greenDark), label: "Publier"),
+            NavigationDestination(
+                icon: Icon(Icons.route_outlined), selectedIcon: Icon(Icons.route, color: CvColors.greenDark), label: "Mes trajets"),
+            NavigationDestination(
+                icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person, color: CvColors.greenDark), label: "Profil"),
+          ],
+        ),
       ),
     );
   }
@@ -85,52 +96,111 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Covoit229 🚗")),
+      backgroundColor: CvColors.bg,
       body: RefreshIndicator(
         onRefresh: load,
+        color: CvColors.green,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
           children: [
+            // Héro dégradé + carte de recherche
             Container(
-              color: CvColors.navy,
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-              child: Column(
+              decoration: const BoxDecoration(
+                gradient: kHeroGradient,
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 22),
+              child: SafeArea(
+                bottom: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Salut 👋",
+                                  style: TextStyle(color: Colors.white70, fontSize: 13)),
+                              SizedBox(height: 2),
+                              Text(
+                                "Où vas-tu aujourd'hui ?",
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w800),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const CvLogo(size: 42),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    SoftCard(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
+                        children: [
+                          CityPicker(
+                            hint: "Ville de départ",
+                            icon: Icons.trip_origin,
+                            iconColor: CvColors.green,
+                            value: from,
+                            onChanged: (v) {
+                              setState(() => from = v);
+                              load();
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          CityPicker(
+                            hint: "Ville d'arrivée",
+                            icon: Icons.location_on,
+                            iconColor: CvColors.amber,
+                            value: to,
+                            onChanged: (v) {
+                              setState(() => to = v);
+                              load();
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CityPicker(
-                          hint: "Départ",
-                          value: from,
-                          onChanged: (v) {
-                            setState(() => from = v);
-                            load();
-                          },
-                        ),
+                  const Text("Trajets disponibles",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                  const SizedBox(width: 8),
+                  if (!loading)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: CvColors.green.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8),
-                        child: Icon(Icons.arrow_forward, color: Colors.white70),
+                      child: Text(
+                        "${trips.length}",
+                        style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: CvColors.greenDark),
                       ),
-                      Expanded(
-                        child: CityPicker(
-                          hint: "Arrivée",
-                          value: to,
-                          onChanged: (v) {
-                            setState(() => to = v);
-                            load();
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
                 ],
               ),
             ),
             if (loading)
               const Padding(
                 padding: EdgeInsets.all(40),
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(child: CircularProgressIndicator(color: CvColors.green)),
               )
             else if (error != null)
               Padding(
@@ -169,16 +239,28 @@ class _SearchScreenState extends State<SearchScreen> {
 
 class CityPicker extends StatelessWidget {
   final String hint;
+  final IconData icon;
+  final Color iconColor;
   final String? value;
   final ValueChanged<String?> onChanged;
-  const CityPicker({super.key, required this.hint, required this.value, required this.onChanged});
+  const CityPicker({
+    super.key,
+    required this.hint,
+    required this.value,
+    required this.onChanged,
+    this.icon = Icons.place,
+    this.iconColor = CvColors.green,
+  });
 
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String?>(
       value: value,
       isExpanded: true,
-      decoration: InputDecoration(hintText: hint),
+      decoration: InputDecoration(
+        hintText: hint,
+        prefixIcon: Icon(icon, color: iconColor, size: 20),
+      ),
       items: [
         DropdownMenuItem<String?>(value: null, child: Text("$hint (toutes)")),
         ...kCities.map((c) => DropdownMenuItem<String?>(value: c, child: Text(c))),
@@ -196,6 +278,32 @@ String fmtDate(DateTime d) {
   return df.format(d);
 }
 
+Color _contribBg(String type) {
+  switch (type) {
+    case 'free':
+      return const Color(0xFFE0F2F1);
+    case 'fuel':
+      return const Color(0xFFFFF3D6);
+    case 'fixed':
+      return const Color(0xFFE1F5E4);
+    default:
+      return const Color(0xFFE8EAF6);
+  }
+}
+
+Color _contribFg(String type) {
+  switch (type) {
+    case 'free':
+      return const Color(0xFF00695C);
+    case 'fuel':
+      return const Color(0xFF9A6B00);
+    case 'fixed':
+      return CvColors.greenDark;
+    default:
+      return const Color(0xFF3949AB);
+  }
+}
+
 class TripCard extends StatelessWidget {
   final Trip trip;
   final VoidCallback onTap;
@@ -204,60 +312,125 @@ class TripCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final recurring = trip.recurringDays.isNotEmpty;
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      "${trip.fromCity} → ${trip.toCity}",
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+    final dateTxt = recurring
+        ? "🔁 ${trip.recurringDays.map((d) => kWeekDays[d - 1]).join(', ')}"
+        : DateFormat("d MMM", "fr_FR").format(trip.departAt);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: SoftCard(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Heure + date
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          DateFormat.Hm().format(trip.departAt),
+                          style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: CvColors.navy),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(dateTxt,
+                            style:
+                                const TextStyle(fontSize: 11, color: Colors.black45)),
+                      ],
                     ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: CvColors.green.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(20),
+                    const SizedBox(width: 14),
+                    // Ligne de route
+                    Column(
+                      children: [
+                        const SizedBox(height: 4),
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                              color: CvColors.green, shape: BoxShape.circle),
+                        ),
+                        Container(width: 2, height: 22, color: const Color(0xFFDDE5DF)),
+                        const Icon(Icons.location_on,
+                            size: 14, color: CvColors.amber),
+                      ],
                     ),
-                    child: Text(
-                      trip.contribLabel,
-                      style: const TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w600, color: CvColors.greenDark),
+                    const SizedBox(width: 10),
+                    // Villes
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(trip.fromCity,
+                              style: const TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 14),
+                          Text(trip.toCity,
+                              style: const TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.w700)),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                recurring
-                    ? "🔁 ${trip.recurringDays.map((d) => kWeekDays[d - 1]).join(', ')} · ${DateFormat.Hm().format(trip.departAt)}"
-                    : "🗓️ ${fmtDate(trip.departAt)}",
-                style: const TextStyle(color: Colors.black54, fontSize: 13),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Icon(Icons.person, size: 16, color: Colors.black45),
-                  const SizedBox(width: 4),
-                  Text(trip.driver?.fullName ?? "Conducteur",
-                      style: const TextStyle(fontSize: 13, color: Colors.black87)),
-                  const Spacer(),
-                  Text(
-                    "${trip.seatsLeft} place${trip.seatsLeft > 1 ? 's' : ''} libre${trip.seatsLeft > 1 ? 's' : ''}",
-                    style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w600, color: CvColors.navy),
-                  ),
-                ],
-              ),
-            ],
+                    // Contribution
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: _contribBg(trip.contribType),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        trip.contribLabel,
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: _contribFg(trip.contribType)),
+                      ),
+                    ),
+                  ],
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 10),
+                  child: Divider(height: 1, color: Color(0xFFEDF1EE)),
+                ),
+                Row(
+                  children: [
+                    InitialsAvatar(name: trip.driver?.fullName ?? "?", size: 28),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        trip.driver?.fullName ?? "Conducteur",
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: CvColors.navy.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        "${trip.seatsLeft} place${trip.seatsLeft > 1 ? 's' : ''}",
+                        style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: CvColors.navy),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -308,7 +481,8 @@ class _MyTripsScreenState extends State<MyTripsScreen> {
         appBar: AppBar(
           title: const Text("Mes trajets"),
           bottom: const TabBar(
-            indicatorColor: CvColors.green,
+            indicatorColor: CvColors.greenBright,
+            indicatorWeight: 3,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white60,
             tabs: [
@@ -318,14 +492,15 @@ class _MyTripsScreenState extends State<MyTripsScreen> {
           ),
         ),
         body: loading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator(color: CvColors.green))
             : TabBarView(
                 children: [
                   RefreshIndicator(
                     onRefresh: load,
+                    color: CvColors.green,
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                       children: [
                         if (asDriver.isEmpty)
                           const Padding(
@@ -346,9 +521,10 @@ class _MyTripsScreenState extends State<MyTripsScreen> {
                   ),
                   RefreshIndicator(
                     onRefresh: load,
+                    color: CvColors.green,
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                       children: [
                         if (asPassenger.isEmpty)
                           const Padding(
@@ -357,21 +533,45 @@ class _MyTripsScreenState extends State<MyTripsScreen> {
                                 textAlign: TextAlign.center,
                                 style: TextStyle(color: Colors.black54)),
                           ),
-                        ...asPassenger.where((b) => b.trip != null).map((b) => Card(
-                              child: ListTile(
-                                title: Text(
-                                    "${b.trip!.fromCity} → ${b.trip!.toCity}",
-                                    style:
-                                        const TextStyle(fontWeight: FontWeight.w700)),
-                                subtitle: Text(
-                                    "${fmtDate(b.trip!.departAt)}\n${b.seats} place${b.seats > 1 ? 's' : ''} · ${b.statusLabel}"),
-                                isThreeLine: true,
-                                trailing: const Icon(Icons.chevron_right),
-                                onTap: () => Navigator.of(context)
-                                    .push(MaterialPageRoute(
-                                        builder: (_) =>
-                                            TripDetailScreen(trip: b.trip!)))
-                                    .then((_) => load()),
+                        ...asPassenger.where((b) => b.trip != null).map((b) => Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(20),
+                                  onTap: () => Navigator.of(context)
+                                      .push(MaterialPageRoute(
+                                          builder: (_) =>
+                                              TripDetailScreen(trip: b.trip!)))
+                                      .then((_) => load()),
+                                  child: SoftCard(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                "${b.trip!.fromCity} → ${b.trip!.toCity}",
+                                                style: const TextStyle(
+                                                    fontWeight: FontWeight.w700,
+                                                    fontSize: 15),
+                                              ),
+                                            ),
+                                            Text(b.statusLabel,
+                                                style: const TextStyle(fontSize: 12)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          "${fmtDate(b.trip!.departAt)} · ${b.seats} place${b.seats > 1 ? 's' : ''}",
+                                          style: const TextStyle(
+                                              fontSize: 12, color: Colors.black54),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ),
                             )),
                       ],

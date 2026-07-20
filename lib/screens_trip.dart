@@ -196,10 +196,8 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                 ),
                 Card(
                   child: ListTile(
-                    leading: const CircleAvatar(
-                      backgroundColor: CvColors.navy,
-                      child: Icon(Icons.person, color: Colors.white),
-                    ),
+                    leading: InitialsAvatar(
+                        name: trip.driver?.fullName ?? "?", size: 42),
                     title: Text(trip.driver?.fullName ?? "Conducteur",
                         style: const TextStyle(fontWeight: FontWeight.w700)),
                     subtitle: Text(driverRatings.isEmpty

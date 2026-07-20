@@ -12,6 +12,7 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   bool signup = false;
   bool busy = false;
+  bool hidePass = true;
   String? error;
   final phoneC = TextEditingController();
   final passC = TextEditingController();
@@ -22,7 +23,7 @@ class _AuthScreenState extends State<AuthScreen> {
     final pass = passC.text;
     setState(() => error = null);
     if (phone.replaceAll(RegExp(r'[^0-9]'), '').length < 8) {
-      setState(() => error = "Entre un numéro de téléphone valide (ex : 01 97 00 00 00).");
+      setState(() => error = "Entre un numéro valide (ex : 01 97 00 00 00).");
       return;
     }
     if (pass.length < 6) {
@@ -59,71 +60,116 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: CvColors.navy,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Icon(Icons.directions_car_filled, size: 72, color: CvColors.green),
-                const SizedBox(height: 12),
-                const Text(
-                  "Covoit229",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  "Le covoiturage solidaire du Bénin 🇧🇯\nOn partage la route, on partage les frais.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
-                ),
-                const SizedBox(height: 28),
-                if (signup) ...[
-                  TextField(
-                    controller: nameC,
-                    decoration: const InputDecoration(hintText: "Nom complet"),
+      body: Container(
+        decoration: const BoxDecoration(gradient: kHeroGradient),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CvLogo(size: 88),
+                  const SizedBox(height: 18),
+                  const Text(
+                    "Covoit229",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 34,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 6),
+                  const Text(
+                    "On partage la route,\non partage les frais 🇧🇯",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+                  ),
+                  const SizedBox(height: 28),
+                  SoftCard(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          signup ? "Créer un compte" : "Bon retour 👋",
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 16),
+                        if (signup) ...[
+                          TextField(
+                            controller: nameC,
+                            textCapitalization: TextCapitalization.words,
+                            decoration: const InputDecoration(
+                              hintText: "Nom complet",
+                              prefixIcon: Icon(Icons.person_outline),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        TextField(
+                          controller: phoneC,
+                          keyboardType: TextInputType.phone,
+                          decoration: const InputDecoration(
+                            hintText: "Numéro de téléphone (WhatsApp)",
+                            prefixIcon: Icon(Icons.phone_iphone),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: passC,
+                          obscureText: hidePass,
+                          decoration: InputDecoration(
+                            hintText: "Mot de passe",
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              onPressed: () => setState(() => hidePass = !hidePass),
+                              icon: Icon(
+                                hidePass ? Icons.visibility_off : Icons.visibility,
+                                color: Colors.black38,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        if (error != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Text(
+                              error!,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Color(0xFFD84315), fontSize: 13),
+                            ),
+                          ),
+                        GradientButton(
+                          label: busy
+                              ? "Un instant…"
+                              : signup
+                                  ? "Créer mon compte"
+                                  : "Se connecter",
+                          icon: signup ? Icons.person_add_alt_1 : Icons.login,
+                          onPressed: busy ? null : submit,
+                        ),
+                        TextButton(
+                          onPressed: () => setState(() => signup = !signup),
+                          child: Text(
+                            signup
+                                ? "J'ai déjà un compte — se connecter"
+                                : "Nouveau ? Créer un compte",
+                            style: const TextStyle(
+                              color: CvColors.greenDark,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
-                TextField(
-                  controller: phoneC,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(hintText: "Numéro de téléphone (WhatsApp)"),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: passC,
-                  obscureText: true,
-                  decoration: const InputDecoration(hintText: "Mot de passe"),
-                ),
-                const SizedBox(height: 16),
-                if (error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(error!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.orangeAccent)),
-                  ),
-                ElevatedButton(
-                  onPressed: busy ? null : submit,
-                  child: Text(busy
-                      ? "Un instant…"
-                      : signup
-                          ? "Créer mon compte"
-                          : "Se connecter"),
-                ),
-                TextButton(
-                  onPressed: () => setState(() => signup = !signup),
-                  child: Text(
-                    signup ? "J'ai déjà un compte — se connecter" : "Nouveau ? Créer un compte",
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

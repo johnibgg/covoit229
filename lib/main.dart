@@ -24,6 +24,38 @@ class CovoitApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
       home: const AuthGate(),
+      // Sur grand écran (web desktop), l'appli s'affiche dans un cadre
+      // téléphone centré — bien plus élégant que des champs étirés.
+      builder: (context, child) {
+        return LayoutBuilder(builder: (ctx, c) {
+          if (c.maxWidth <= 560) return child ?? const SizedBox();
+          final frameH = (c.maxHeight - 40).clamp(480.0, 880.0);
+          return ColoredBox(
+            color: const Color(0xFF060F1B),
+            child: Center(
+              child: Container(
+                width: 420,
+                height: frameH,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(38),
+                  border: Border.all(color: const Color(0xFF1E3A5F), width: 3),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x5500D24B),
+                      blurRadius: 80,
+                      spreadRadius: -18,
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(35),
+                  child: child,
+                ),
+              ),
+            ),
+          );
+        });
+      },
     );
   }
 }
