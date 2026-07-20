@@ -82,7 +82,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    "On partage la route, on partage les frais 🇧🇯",
+                    "On partage la route, on partage les frais",
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
                   ),
