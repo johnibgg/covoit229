@@ -69,24 +69,24 @@ class _AuthScreenState extends State<AuthScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const CvLogo(size: 88),
-                  const SizedBox(height: 18),
+                  const CvLogo(size: 64),
+                  const SizedBox(height: 10),
                   const Text(
                     "Covoit229",
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 34,
+                      fontSize: 30,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   const Text(
-                    "On partage la route,\non partage les frais 🇧🇯",
+                    "On partage la route, on partage les frais 🇧🇯",
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+                    style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 18),
                   SoftCard(
                     padding: const EdgeInsets.all(20),
                     child: Column(

@@ -1,4 +1,6 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -24,6 +26,23 @@ class CovoitApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
       home: const AuthGate(),
+      // Interface et sélecteurs (date/heure) en français.
+      locale: const Locale('fr'),
+      supportedLocales: const [Locale('fr'), Locale('en')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      // Sur le web desktop, permet aussi de faire défiler en glissant à la souris.
+      scrollBehavior: const MaterialScrollBehavior().copyWith(
+        dragDevices: {
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.stylus,
+          PointerDeviceKind.trackpad,
+        },
+      ),
       // Sur grand écran (web desktop), l'appli s'affiche dans un cadre
       // téléphone centré — bien plus élégant que des champs étirés.
       builder: (context, child) {
