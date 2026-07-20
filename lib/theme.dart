@@ -29,12 +29,6 @@ ThemeData buildTheme() {
       elevation: 0,
       centerTitle: true,
     ),
-    cardTheme: CardTheme(
-      color: CvColors.card,
-      elevation: 1.5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-    ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: CvColors.green,
