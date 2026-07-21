@@ -8,6 +8,11 @@ const String kSupabaseAnonKey = "sb_publishable_kSyy_fuEOqJJw2djQSCZLA_3xxHK4LR"
 const String kAiEndpoint =
     "https://clipforge-worker-x779.onrender.com/suggest-contribution";
 
+// Où le lien « mot de passe oublié » ramène l'utilisateur (la PWA web).
+// Les utilisateurs de l'APK réinitialisent aussi via ce lien web, puis
+// se reconnectent dans l'app avec le nouveau mot de passe.
+const String kResetRedirect = "https://johnibgg.github.io/covoit229/";
+
 // Villes proposées (Bénin). Le champ "détail" reste libre (quartier, repère…).
 const List<String> kCities = [
   "Cotonou",

@@ -18,13 +18,16 @@ class Db {
   static String get uid => supa.auth.currentUser?.id ?? '';
 
   // ---- Auth ----
+  // Inscription : email RÉEL (identifiant + récupération du mot de passe),
+  // téléphone gardé pour le contact dans l'app.
   static Future<void> signUp({
     required String phone,
+    required String email,
     required String password,
     required String fullName,
   }) async {
     final res = await supa.auth.signUp(
-      email: phoneToEmail(phone),
+      email: email.trim(),
       password: password,
     );
     final user = res.user;
@@ -35,21 +38,46 @@ class Db {
       'id': user.id,
       'full_name': fullName.trim(),
     });
-    // Le numéro va dans une table à part, lisible par soi seul (confidentialité).
+    // Numéro + email dans la table privée (email sert au login par téléphone
+    // et à la récupération du mot de passe).
     await supa.from('cv_contacts').upsert({
       'id': user.id,
       'phone': phone.trim(),
+      'email': email.trim(),
     });
   }
 
+  // Connexion souple : l'utilisateur tape son EMAIL ou son TÉLÉPHONE.
   static Future<void> signIn({
-    required String phone,
+    required String identifier,
     required String password,
   }) async {
-    await supa.auth.signInWithPassword(
-      email: phoneToEmail(phone),
-      password: password,
-    );
+    var email = identifier.trim();
+    if (!email.contains('@')) {
+      // Login par téléphone : on retrouve l'email d'auth via une fonction serveur.
+      try {
+        final resolved = await supa.rpc('cv_email_for_phone', params: {'p_phone': identifier});
+        if (resolved is String && resolved.isNotEmpty) {
+          email = resolved;
+        } else {
+          // Compat anciens comptes (créés avant l'email réel) : pseudo-email.
+          email = phoneToEmail(identifier);
+        }
+      } catch (_) {
+        email = phoneToEmail(identifier);
+      }
+    }
+    await supa.auth.signInWithPassword(email: email, password: password);
+  }
+
+  // Envoie un lien de réinitialisation du mot de passe par email (gratuit).
+  static Future<void> sendPasswordReset(String email) async {
+    await supa.auth.resetPasswordForEmail(email.trim(), redirectTo: kResetRedirect);
+  }
+
+  // Applique le nouveau mot de passe (après clic sur le lien de récupération).
+  static Future<void> updatePassword(String newPassword) async {
+    await supa.auth.updateUser(UserAttributes(password: newPassword));
   }
 
   static Future<void> signOut() => supa.auth.signOut();
