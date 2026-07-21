@@ -147,3 +147,39 @@ create policy cv_reports_select on cv_reports for select to authenticated
   using (reporter_id = auth.uid());
 
 -- Fin. Résultat attendu : « Success. No rows returned ».
+
+-- 8) PHOTOS DE PROFIL (bucket public cv-avatars) --------------------------
+insert into storage.buckets (id, name, public)
+  values ('cv-avatars','cv-avatars', true)
+  on conflict (id) do update set public = true;
+drop policy if exists cv_avatars_read on storage.objects;
+create policy cv_avatars_read on storage.objects for select using (bucket_id = 'cv-avatars');
+drop policy if exists cv_avatars_insert on storage.objects;
+create policy cv_avatars_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'cv-avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists cv_avatars_update on storage.objects;
+create policy cv_avatars_update on storage.objects for update to authenticated
+  using (bucket_id = 'cv-avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists cv_avatars_delete on storage.objects;
+create policy cv_avatars_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'cv-avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- 9) CNI privée (dans cv_contacts) + révélation aux partenaires confirmés --
+alter table cv_contacts add column if not exists cni text;
+create or replace function cv_partner_cni(p_trip uuid, p_other uuid)
+returns text language plpgsql security definer set search_path = public as $FN2$
+declare v_ok boolean; v_cni text;
+begin
+  select exists(
+    select 1 from cv_trips t
+    join cv_bookings b on b.trip_id = t.id and b.status in ('accepted','done')
+    where t.id = p_trip
+      and ((t.driver_id = auth.uid() and b.passenger_id = p_other)
+        or (b.passenger_id = auth.uid() and t.driver_id = p_other))
+  ) into v_ok;
+  if not v_ok then return null; end if;
+  select cni into v_cni from cv_contacts where id = p_other;
+  return v_cni;
+end; $FN2$;
+revoke all on function cv_partner_cni(uuid, uuid) from public;
+grant execute on function cv_partner_cni(uuid, uuid) to authenticated;
