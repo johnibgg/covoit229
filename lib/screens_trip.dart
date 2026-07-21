@@ -212,9 +212,21 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                 Card(
                   child: ListTile(
                     leading: InitialsAvatar(
-                        name: trip.driver?.fullName ?? "?", size: 42),
-                    title: Text(trip.driver?.fullName ?? "Conducteur",
-                        style: const TextStyle(fontWeight: FontWeight.w700)),
+                        name: trip.driver?.fullName ?? "?",
+                        size: 42,
+                        photoUrl: trip.driver?.photoUrl),
+                    title: Row(
+                      children: [
+                        Flexible(
+                          child: Text(trip.driver?.fullName ?? "Conducteur",
+                              style: const TextStyle(fontWeight: FontWeight.w700)),
+                        ),
+                        if (trip.driver?.verified == true) ...[
+                          const SizedBox(width: 6),
+                          const Icon(Icons.verified, size: 16, color: CvColors.green),
+                        ],
+                      ],
+                    ),
                     subtitle: Text(driverRatings.isEmpty
                         ? "Pas encore d'avis"
                         : "⭐ ${avg.toStringAsFixed(1)} · ${driverRatings.length} avis"),
@@ -274,6 +286,15 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                         ),
                       ),
                     ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: OutlinedButton.icon(
+                      onPressed: () => revealIdentity(
+                          trip.driverId, trip.driver?.fullName ?? "le conducteur"),
+                      icon: const Icon(Icons.badge_outlined, size: 18),
+                      label: const Text("Voir la pièce d'identité du conducteur"),
+                    ),
                   ),
                   if (myBooking != null && (myBooking!.status == 'done' || trip.status == 'done'))
                     Padding(
@@ -456,6 +477,27 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     final uri = Uri.parse("https://wa.me/?text=${Uri.encodeComponent(txt)}");
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok) msg("Impossible d'ouvrir le partage.");
+  }
+
+  // Sécurité : révèle la pièce d'identité (CNI) d'un partenaire confirmé.
+  Future<void> revealIdentity(String otherId, String name) async {
+    final cni = await Db.partnerCni(trip.id, otherId);
+    if (!mounted) return;
+    if (cni == null || cni.isEmpty) {
+      msg("🪪 La pièce d'identité s'affiche une fois la réservation acceptée (et si la personne l'a renseignée dans son profil).");
+      return;
+    }
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("Pièce d'identité — $name"),
+        content: Text(
+            "N° CNI / pièce : $cni\n\n💡 Note ce numéro et partage-le avec un proche avant de partir — sécurité."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Fermer")),
+        ],
+      ),
+    );
   }
 
   Future<void> reportDialog() async {

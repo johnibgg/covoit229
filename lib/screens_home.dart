@@ -402,14 +402,27 @@ class TripCard extends StatelessWidget {
                 ),
                 Row(
                   children: [
-                    InitialsAvatar(name: trip.driver?.fullName ?? "?", size: 28),
+                    InitialsAvatar(
+                        name: trip.driver?.fullName ?? "?",
+                        size: 28,
+                        photoUrl: trip.driver?.photoUrl),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
-                        trip.driver?.fullName ?? "Conducteur",
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.w600),
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              trip.driver?.fullName ?? "Conducteur",
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 13, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          if (trip.driver?.verified == true) ...[
+                            const SizedBox(width: 4),
+                            const Icon(Icons.verified, size: 13, color: CvColors.green),
+                          ],
+                        ],
                       ),
                     ),
                     Container(

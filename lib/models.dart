@@ -9,6 +9,7 @@ class Profile {
   final String? phone;
   final bool isDriver;
   final String? vehicle;
+  final String? photoUrl;
 
   Profile({
     required this.id,
@@ -16,7 +17,11 @@ class Profile {
     this.phone,
     required this.isDriver,
     this.vehicle,
+    this.photoUrl,
   });
+
+  // Un profil avec photo = « vérifié » (on voit le visage).
+  bool get verified => (photoUrl ?? '').isNotEmpty;
 
   factory Profile.fromMap(Map<String, dynamic> m) => Profile(
         id: m['id'] as String,
@@ -24,6 +29,7 @@ class Profile {
         phone: m['phone'] as String?,
         isDriver: (m['is_driver'] ?? false) as bool,
         vehicle: m['vehicle'] as String?,
+        photoUrl: m['photo_url'] as String?,
       );
 }
 

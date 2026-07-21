@@ -182,10 +182,10 @@ class GradientButton extends StatelessWidget {
 class InitialsAvatar extends StatelessWidget {
   final String name;
   final double size;
-  const InitialsAvatar({super.key, required this.name, this.size = 40});
+  final String? photoUrl;
+  const InitialsAvatar({super.key, required this.name, this.size = 40, this.photoUrl});
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _initials() {
     final parts =
         name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
     String ini = '';
@@ -204,6 +204,21 @@ class InitialsAvatar extends StatelessWidget {
           fontWeight: FontWeight.w800,
           fontSize: size * 0.38,
         ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final url = photoUrl ?? '';
+    if (url.isEmpty) return _initials();
+    return ClipOval(
+      child: Image.network(
+        url,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _initials(),
       ),
     );
   }

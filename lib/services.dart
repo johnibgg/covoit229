@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config.dart';
@@ -61,13 +62,66 @@ class Db {
     return Profile.fromMap(rows.first);
   }
 
-  // Mon propre numéro (table privée cv_contacts).
+  // Mon propre numéro + CNI (table privée cv_contacts).
   static Future<String?> myPhone() async {
     if (uid.isEmpty) return null;
     try {
       final rows = await supa.from('cv_contacts').select('phone').eq('id', uid).limit(1);
       if ((rows as List).isEmpty) return null;
       return rows.first['phone'] as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<String?> myCni() async {
+    if (uid.isEmpty) return null;
+    try {
+      final rows = await supa.from('cv_contacts').select('cni').eq('id', uid).limit(1);
+      if ((rows as List).isEmpty) return null;
+      return rows.first['cni'] as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<void> setCni(String cni) async {
+    if (uid.isEmpty) return;
+    await supa.from('cv_contacts').upsert({'id': uid, 'cni': cni.trim()});
+  }
+
+  // Pièce d'identité d'un partenaire : révélée seulement entre partenaires
+  // d'un trajet confirmé (même contrôle serveur que le numéro).
+  static Future<String?> partnerCni(String tripId, String otherId) async {
+    try {
+      final res = await supa.rpc('cv_partner_cni', params: {
+        'p_trip': tripId,
+        'p_other': otherId,
+      });
+      return res as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Upload de la photo de profil (bucket public cv-avatars) → renvoie l'URL.
+  static Future<String?> uploadAvatar(Uint8List bytes, {String ext = 'jpg'}) async {
+    if (uid.isEmpty) return null;
+    try {
+      final path = '$uid/avatar.$ext';
+      await supa.storage.from('cv-avatars').uploadBinary(
+            path,
+            bytes,
+            fileOptions: FileOptions(
+              upsert: true,
+              contentType: ext == 'png' ? 'image/png' : 'image/jpeg',
+            ),
+          );
+      // On ajoute un cache-buster pour forcer le rafraîchissement de la photo.
+      final url = supa.storage.from('cv-avatars').getPublicUrl(path);
+      final busted = '$url?v=${DateTime.now().millisecondsSinceEpoch}';
+      await supa.from('cv_profiles').update({'photo_url': busted}).eq('id', uid);
+      return busted;
     } catch (_) {
       return null;
     }
