@@ -1,4 +1,7 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'config.dart';
 import 'models.dart';
 
 final supa = Supabase.instance.client;
@@ -30,6 +33,10 @@ class Db {
     await supa.from('cv_profiles').upsert({
       'id': user.id,
       'full_name': fullName.trim(),
+    });
+    // Le numéro va dans une table à part, lisible par soi seul (confidentialité).
+    await supa.from('cv_contacts').upsert({
+      'id': user.id,
       'phone': phone.trim(),
     });
   }
@@ -52,6 +59,65 @@ class Db {
     final rows = await supa.from('cv_profiles').select().eq('id', uid).limit(1);
     if (rows.isEmpty) return null;
     return Profile.fromMap(rows.first);
+  }
+
+  // Mon propre numéro (table privée cv_contacts).
+  static Future<String?> myPhone() async {
+    if (uid.isEmpty) return null;
+    try {
+      final rows = await supa.from('cv_contacts').select('phone').eq('id', uid).limit(1);
+      if ((rows as List).isEmpty) return null;
+      return rows.first['phone'] as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Numéro d'un partenaire de trajet : renvoyé UNIQUEMENT si une réservation
+  // acceptée nous lie (contrôlé côté serveur par la fonction cv_partner_phone).
+  static Future<String?> partnerPhone(String tripId, String otherId) async {
+    try {
+      final res = await supa.rpc('cv_partner_phone', params: {
+        'p_trip': tripId,
+        'p_other': otherId,
+      });
+      return res as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Signalement d'un utilisateur / trajet.
+  static Future<void> report({String? reportedId, String? tripId, required String reason}) async {
+    await supa.from('cv_reports').insert({
+      'reporter_id': uid,
+      if (reportedId != null) 'reported_id': reportedId,
+      if (tripId != null) 'trip_id': tripId,
+      'reason': reason.trim(),
+    });
+  }
+
+  // IA « Participation conseillée » (endpoint serveur sécurisé, clé Groq côté serveur).
+  static Future<Map<String, dynamic>?> suggestContribution({
+    required String from,
+    required String to,
+    required int seats,
+  }) async {
+    try {
+      final res = await http
+          .post(
+            Uri.parse(kAiEndpoint),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'from': from, 'to': to, 'seats': seats}),
+          )
+          .timeout(const Duration(seconds: 25));
+      if (res.statusCode != 200) return null;
+      final data = jsonDecode(res.body);
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 
   static Future<void> updateProfile({String? fullName, String? vehicle, bool? isDriver}) async {

@@ -158,7 +158,22 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   Widget build(BuildContext context) {
     final avg = Db.avgStars(driverRatings);
     return Scaffold(
-      appBar: AppBar(title: Text("${trip.fromCity} → ${trip.toCity}")),
+      appBar: AppBar(
+        title: Text("${trip.fromCity} → ${trip.toCity}"),
+        actions: [
+          IconButton(
+            tooltip: "Partager mon trajet (sécurité)",
+            icon: const Icon(Icons.shield_outlined),
+            onPressed: shareTrip,
+          ),
+          if (!isDriver)
+            IconButton(
+              tooltip: "Signaler",
+              icon: const Icon(Icons.flag_outlined),
+              onPressed: reportDialog,
+            ),
+        ],
+      ),
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -232,9 +247,13 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () {
-                            final p = trip.driver?.phone;
-                            if (p == null || p.isEmpty) return;
+                          onPressed: () async {
+                            final p = await Db.partnerPhone(trip.id, trip.driverId);
+                            if (!context.mounted) return;
+                            if (p == null || p.isEmpty) {
+                              msg("📵 Le numéro du conducteur s'affiche une fois ta réservation acceptée. En attendant, passe par le Chat.");
+                              return;
+                            }
                             openWhatsApp(context, p,
                                 "Salut ! Je te contacte via Covoit229 pour ton trajet ${trip.fromCity} → ${trip.toCity}.");
                           },
@@ -326,9 +345,13 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                                   OutlinedButton.icon(
                                     style: OutlinedButton.styleFrom(
                                         minimumSize: const Size(0, 38)),
-                                    onPressed: () {
-                                      final p = b.passenger?.phone;
-                                      if (p == null || p.isEmpty) return;
+                                    onPressed: () async {
+                                      final p = await Db.partnerPhone(trip.id, b.passengerId);
+                                      if (!context.mounted) return;
+                                      if (p == null || p.isEmpty) {
+                                        msg("📵 Accepte d'abord la réservation pour voir le numéro du passager.");
+                                        return;
+                                      }
                                       openWhatsApp(context, p,
                                           "Salut ! C'est le conducteur Covoit229 pour le trajet ${trip.fromCity} → ${trip.toCity}.");
                                     },
@@ -416,6 +439,50 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
               ],
             ),
     );
+  }
+
+  void msg(String m) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  }
+
+  // Sécurité perso : envoyer l'itinéraire à un proche via WhatsApp (comme Gozem).
+  Future<void> shareTrip() async {
+    final txt =
+        "🛡️ Sécurité Covoit229 — je fais ce trajet : ${trip.fromCity} → ${trip.toCity}, "
+        "${fmtDate(trip.departAt)}. Conducteur : ${trip.driver?.fullName ?? '?'}"
+        "${trip.driver?.vehicle != null ? ' (${trip.driver!.vehicle})' : ''}. "
+        "Si tu n'as pas de mes nouvelles à l'arrivée prévue, appelle-moi.";
+    final uri = Uri.parse("https://wa.me/?text=${Uri.encodeComponent(txt)}");
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok) msg("Impossible d'ouvrir le partage.");
+  }
+
+  Future<void> reportDialog() async {
+    final c = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Signaler ce trajet / conducteur"),
+        content: TextField(
+          controller: c,
+          maxLines: 3,
+          decoration: const InputDecoration(
+              hintText: "Explique brièvement le problème (comportement, faux profil…)"),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Annuler")),
+          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Envoyer")),
+        ],
+      ),
+    );
+    if (ok != true || c.text.trim().isEmpty) return;
+    try {
+      await Db.report(reportedId: trip.driverId, tripId: trip.id, reason: c.text.trim());
+      msg("🚩 Merci, ton signalement a bien été envoyé.");
+    } catch (_) {
+      msg("Échec de l'envoi. Réessaie.");
+    }
   }
 
   Future<void> refreshTrip() async {

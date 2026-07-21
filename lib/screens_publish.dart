@@ -26,6 +26,51 @@ class _PublishScreenState extends State<PublishScreen> {
   final Set<int> days = {};
   bool busy = false;
 
+  // IA « Participation conseillée »
+  Map<String, dynamic>? aiSug;
+  bool aiBusy = false;
+
+  Future<void> suggestAmount() async {
+    if (from == null || to == null) {
+      msg("Choisis d'abord le départ et l'arrivée.");
+      return;
+    }
+    if (from == to) {
+      msg("Départ et arrivée doivent être différents.");
+      return;
+    }
+    setState(() {
+      aiBusy = true;
+      aiSug = null;
+    });
+    final fromTxt = fromDetailC.text.trim().isEmpty ? from! : "$from (${fromDetailC.text.trim()})";
+    final toTxt = toDetailC.text.trim().isEmpty ? to! : "$to (${toDetailC.text.trim()})";
+    final res = await Db.suggestContribution(from: fromTxt, to: toTxt, seats: seats);
+    if (!mounted) return;
+    setState(() {
+      aiBusy = false;
+      aiSug = res;
+    });
+    if (res == null) msg("IA indisponible pour le moment. Réessaie.");
+  }
+
+  String sugLine() {
+    final per = aiSug?['perSeat'];
+    final total = aiSug?['total'];
+    final totalPart = (total is num && total > 0) ? '  (total $total FCFA)' : '';
+    return '≈ $per FCFA / place$totalPart';
+  }
+
+  void useSuggestion() {
+    final per = (aiSug?['perSeat'] as num?)?.toInt() ?? 0;
+    if (per <= 0) return;
+    setState(() {
+      contrib = 'fixed';
+      amountC.text = per.toString();
+    });
+    msg("Montant appliqué : $per FCFA/place. Tu peux l'ajuster.");
+  }
+
   Future<void> pickDate() async {
     final d = await showDatePicker(
       context: context,
@@ -228,6 +273,65 @@ class _PublishScreenState extends State<PublishScreen> {
                     const InputDecoration(hintText: "Montant par place (FCFA) — ex : 500"),
               ),
             ),
+          const SizedBox(height: 12),
+          // ---- IA : Participation conseillée ----
+          Card(
+            color: CvColors.green.withOpacity(0.06),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: BorderSide(color: CvColors.green.withOpacity(0.35)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.auto_awesome, color: CvColors.greenDark, size: 20),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text("Participation conseillée",
+                            style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                      TextButton(
+                        onPressed: aiBusy ? null : suggestAmount,
+                        child: Text(aiBusy ? "Calcul…" : "Estimer"),
+                      ),
+                    ],
+                  ),
+                  const Text(
+                    "L'IA propose un montant juste selon l'itinéraire et le prix du carburant au Bénin.",
+                    style: TextStyle(fontSize: 12, color: Colors.black54),
+                  ),
+                  if (aiSug != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      sugLine(),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w800, color: CvColors.greenDark),
+                    ),
+                    if (aiSug!['rationale'] != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text("💡 ${aiSug!['rationale']}",
+                            style: const TextStyle(fontSize: 12, color: Colors.black87)),
+                      ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(minimumSize: const Size(0, 38)),
+                        onPressed: useSuggestion,
+                        icon: const Icon(Icons.check, size: 16),
+                        label: const Text("Utiliser ce montant"),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: 12),
           TextField(
             controller: noteC,

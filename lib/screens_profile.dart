@@ -13,6 +13,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   Profile? me;
+  String? myPhone;
   List<Rating> ratings = [];
   bool loading = true;
   final nameC = TextEditingController();
@@ -27,6 +28,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> load() async {
     try {
       me = await Db.myProfile();
+      myPhone = await Db.myPhone();
       if (me != null) {
         nameC.text = me!.fullName;
         vehicleC.text = me!.vehicle ?? '';
@@ -85,8 +87,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       labelText: "Mon véhicule (optionnel) — ex : Toyota Corolla grise"),
                 ),
                 const SizedBox(height: 12),
-                Text("📱 Numéro : ${me?.phone ?? ''}",
+                Text("📱 Numéro : ${myPhone ?? '—'}",
                     style: const TextStyle(color: Colors.black54)),
+                const SizedBox(height: 4),
+                const Text(
+                  "🔒 Ton numéro reste privé : il n'est communiqué qu'à un partenaire dont la réservation est acceptée.",
+                  style: TextStyle(fontSize: 11, color: Colors.black45),
+                ),
                 const SizedBox(height: 16),
                 ElevatedButton(onPressed: save, child: const Text("Enregistrer")),
                 const SizedBox(height: 10),

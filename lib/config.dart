@@ -4,6 +4,10 @@
 const String kSupabaseUrl = "https://mrocffviukrykjlcwzak.supabase.co";
 const String kSupabaseAnonKey = "sb_publishable_kSyy_fuEOqJJw2djQSCZLA_3xxHK4LR";
 
+// Endpoint IA « Participation conseillée » (clé Groq gardée côté serveur).
+const String kAiEndpoint =
+    "https://clipforge-worker-x779.onrender.com/suggest-contribution";
+
 // Villes proposées (Bénin). Le champ "détail" reste libre (quartier, repère…).
 const List<String> kCities = [
   "Cotonou",

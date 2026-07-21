@@ -3,14 +3,17 @@
 class Profile {
   final String id;
   final String fullName;
-  final String phone;
+  // Le numéro n'est PLUS chargé avec le profil (confidentialité) : il est
+  // révélé à la demande via Db.partnerPhone() seulement entre partenaires
+  // d'un trajet confirmé. Reste nullable pour compat.
+  final String? phone;
   final bool isDriver;
   final String? vehicle;
 
   Profile({
     required this.id,
     required this.fullName,
-    required this.phone,
+    this.phone,
     required this.isDriver,
     this.vehicle,
   });
@@ -18,7 +21,7 @@ class Profile {
   factory Profile.fromMap(Map<String, dynamic> m) => Profile(
         id: m['id'] as String,
         fullName: (m['full_name'] ?? '') as String,
-        phone: (m['phone'] ?? '') as String,
+        phone: m['phone'] as String?,
         isDriver: (m['is_driver'] ?? false) as bool,
         vehicle: m['vehicle'] as String?,
       );
