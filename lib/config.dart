@@ -4,9 +4,10 @@
 const String kSupabaseUrl = "https://mrocffviukrykjlcwzak.supabase.co";
 const String kSupabaseAnonKey = "sb_publishable_kSyy_fuEOqJJw2djQSCZLA_3xxHK4LR";
 
-// Endpoint IA « Participation conseillée » (clé Groq gardée côté serveur).
+// Endpoint IA « Participation conseillée » — backend PROPRE de Covoit229 :
+// une Edge Function Supabase (clé Groq gardée côté serveur). Séparé du site.
 const String kAiEndpoint =
-    "https://clipforge-worker-x779.onrender.com/suggest-contribution";
+    "$kSupabaseUrl/functions/v1/suggest-contribution";
 
 // Où le lien « mot de passe oublié » ramène l'utilisateur (la PWA web).
 // Les utilisateurs de l'APK réinitialisent aussi via ce lien web, puis

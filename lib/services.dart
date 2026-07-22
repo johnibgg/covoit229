@@ -186,13 +186,18 @@ class Db {
     required int seats,
   }) async {
     try {
+      // La fonction Supabase exige la clé anon (Authorization + apikey).
       final res = await http
           .post(
             Uri.parse(kAiEndpoint),
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': kSupabaseAnonKey,
+              'Authorization': 'Bearer $kSupabaseAnonKey',
+            },
             body: jsonEncode({'from': from, 'to': to, 'seats': seats}),
           )
-          .timeout(const Duration(seconds: 25));
+          .timeout(const Duration(seconds: 30));
       if (res.statusCode != 200) return null;
       final data = jsonDecode(res.body);
       if (data is Map) return Map<String, dynamic>.from(data);
