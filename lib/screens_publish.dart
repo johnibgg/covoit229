@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'config.dart';
 import 'theme.dart';
 import 'services.dart';
+import 'geo.dart';
 
 class PublishScreen extends StatefulWidget {
   const PublishScreen({super.key});
@@ -29,6 +30,38 @@ class _PublishScreenState extends State<PublishScreen> {
   // IA « Participation conseillée »
   Map<String, dynamic>? aiSug;
   bool aiBusy = false;
+
+  // Départ auto par GPS
+  bool locating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _autoDepart(silent: true); // pré-remplit le départ avec ta position
+  }
+
+  Future<void> _autoDepart({bool silent = false}) async {
+    setState(() => locating = true);
+    final pos = await currentPosition();
+    if (!mounted) return;
+    setState(() => locating = false);
+    if (pos == null) {
+      if (!silent) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("Localisation indisponible. Choisis la ville à la main.")));
+      }
+      return;
+    }
+    final city = nearestCity(pos.latitude, pos.longitude);
+    if (city == null) return;
+    // Ne pas écraser un choix déjà fait par l'utilisateur en mode silencieux.
+    if (silent && from != null) return;
+    setState(() => from = city);
+    if (!silent) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Départ : $city (ta position)")));
+    }
+  }
 
   Future<void> suggestAmount() async {
     if (from == null || to == null) {
@@ -166,7 +199,18 @@ class _PublishScreenState extends State<PublishScreen> {
                   onChanged: (v) => setState(() => from = v),
                 ),
               ),
-              const SizedBox(width: 10),
+              // Bouton « Ma position » → remplit la ville de départ via le GPS.
+              IconButton(
+                tooltip: "Utiliser ma position",
+                onPressed: locating ? null : () => _autoDepart(),
+                icon: locating
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: CvColors.green))
+                    : const Icon(Icons.my_location, color: CvColors.green),
+              ),
+              const SizedBox(width: 4),
               Expanded(
                 child: DropdownButtonFormField<String>(
                   value: to,

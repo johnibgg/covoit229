@@ -5,6 +5,7 @@ import 'config.dart';
 import 'theme.dart';
 import 'models.dart';
 import 'services.dart';
+import 'geo.dart';
 import 'screens_publish.dart';
 import 'screens_trip.dart';
 import 'screens_profile.dart';
@@ -72,10 +73,38 @@ class _SearchScreenState extends State<SearchScreen> {
   String? error;
   List<Trip> trips = [];
 
+  // Position de l'utilisateur (pour proposer les trajets proches).
+  double? myLat;
+  double? myLng;
+  String? myCity;
+
   @override
   void initState() {
     super.initState();
     load();
+    _locate();
+  }
+
+  // Récupère la position et trie les trajets par proximité (départ auto aussi).
+  Future<void> _locate() async {
+    final pos = await currentPosition();
+    if (pos == null || !mounted) return;
+    setState(() {
+      myLat = pos.latitude;
+      myLng = pos.longitude;
+      myCity = nearestCity(pos.latitude, pos.longitude);
+    });
+    _sortByProximity();
+  }
+
+  void _sortByProximity() {
+    if (myLat == null || myLng == null) return;
+    trips.sort((a, b) {
+      final da = tripDistanceKm(a, myLat!, myLng!) ?? 1e9;
+      final db = tripDistanceKm(b, myLat!, myLng!) ?? 1e9;
+      return da.compareTo(db);
+    });
+    if (mounted) setState(() {});
   }
 
   Future<void> load() async {
@@ -85,7 +114,10 @@ class _SearchScreenState extends State<SearchScreen> {
     });
     try {
       final res = await Db.searchTrips(from: from, to: to);
-      if (mounted) setState(() => trips = res);
+      if (mounted) {
+        setState(() => trips = res);
+        _sortByProximity(); // trajets près de toi en premier
+      }
     } catch (e) {
       if (mounted) setState(() => error = "Impossible de charger. Vérifie ta connexion.");
     } finally {
@@ -176,8 +208,8 @@ class _SearchScreenState extends State<SearchScreen> {
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
               child: Row(
                 children: [
-                  const Text("Trajets disponibles",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                  Text(myCity != null ? "Près de toi" : "Trajets disponibles",
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                   const SizedBox(width: 8),
                   if (!loading)
                     Container(
@@ -193,6 +225,19 @@ class _SearchScreenState extends State<SearchScreen> {
                             fontWeight: FontWeight.w700,
                             color: CvColors.greenDark),
                       ),
+                    ),
+                  const Spacer(),
+                  if (myCity != null)
+                    Row(
+                      children: [
+                        const Icon(Icons.my_location, size: 14, color: CvColors.green),
+                        const SizedBox(width: 4),
+                        Text(myCity!,
+                            style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: CvColors.greenDark)),
+                      ],
                     ),
                 ],
               ),
